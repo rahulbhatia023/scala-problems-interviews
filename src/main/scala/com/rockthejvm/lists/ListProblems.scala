@@ -41,6 +41,7 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     s"[${toStringHelper(this, "")}]"
   }
 
+  // Complexity: O(min(N, index)
   override def apply(index: Int): T = {
     @tailrec
     def applyHelper(remaining: RList[T], currentIndex: Int): T = {
