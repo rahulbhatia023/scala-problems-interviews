@@ -11,6 +11,8 @@ abstract class RList[+T] {
 
   // This notation of having colon(:) at the end of method name makes it right associative
   def ::[S >: T](elem: S): RList[S] = new ::(elem, this)
+
+  def apply(index: Int): T
 }
 
 case object RNil extends RList[Nothing] {
@@ -21,6 +23,8 @@ case object RNil extends RList[Nothing] {
   override def isEmpty: Boolean = true
 
   override def toString: String = "[]"
+
+  override def apply(index: Int): Nothing = throw new NoSuchElementException()
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -36,6 +40,17 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
 
     s"[${toStringHelper(this, "")}]"
   }
+
+  override def apply(index: Int): T = {
+    @tailrec
+    def applyHelper(remaining: RList[T], currentIndex: Int): T = {
+      if (currentIndex == index) remaining.head
+      else applyHelper(remaining.tail, currentIndex + 1)
+    }
+
+    if (index < 0) throw new NoSuchElementException()
+    else applyHelper(this, 0)
+  }
 }
 
 object ListProblems extends App {
@@ -43,4 +58,13 @@ object ListProblems extends App {
   val list = 1 :: 2 :: 3 :: RNil
 
   println(list)
+  println(list(0)) // 1
+  println(list(1)) // 2
+  println(list(2)) // 3
+
+  //println(list(-1))
+  // NoSuchElementException
+
+  // println(list(4))
+  // NoSuchElementException
 }
