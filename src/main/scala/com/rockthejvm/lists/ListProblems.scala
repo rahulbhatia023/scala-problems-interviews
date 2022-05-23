@@ -13,6 +13,8 @@ abstract class RList[+T] {
   def ::[S >: T](elem: S): RList[S] = new ::(elem, this)
 
   def apply(index: Int): T
+
+  def length: Int
 }
 
 case object RNil extends RList[Nothing] {
@@ -25,6 +27,8 @@ case object RNil extends RList[Nothing] {
   override def toString: String = "[]"
 
   override def apply(index: Int): Nothing = throw new NoSuchElementException()
+
+  override def length: Int = 0
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -52,13 +56,26 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     if (index < 0) throw new NoSuchElementException()
     else applyHelper(this, 0)
   }
+
+  // Complexity: O(N)
+  override def length: Int = {
+    @tailrec
+    def lengthHelper(list: RList[T], accumulator: Int): Int = {
+      if (list.isEmpty) accumulator
+      else lengthHelper(list.tail, accumulator + 1)
+    }
+
+    lengthHelper(this, 0)
+  }
 }
 
 object ListProblems extends App {
   //val list = RNil.::(3).::(2).::(1)
-  val list = 1 :: 2 :: 3 :: RNil
+  val list = 1 :: 2 :: 3 :: 9 :: 8 :: 7 :: RNil
 
   println(list)
+  // [1, 2, 3, 9, 8, 7]
+
   println(list(0)) // 1
   println(list(1)) // 2
   println(list(2)) // 3
@@ -68,4 +85,6 @@ object ListProblems extends App {
 
   // println(list(4))
   // NoSuchElementException
+
+  println(list.length) // 6
 }
