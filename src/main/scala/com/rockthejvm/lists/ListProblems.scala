@@ -15,6 +15,8 @@ abstract class RList[+T] {
   def apply(index: Int): T
 
   def length: Int
+
+  def reverse: RList[T]
 }
 
 case object RNil extends RList[Nothing] {
@@ -29,6 +31,8 @@ case object RNil extends RList[Nothing] {
   override def apply(index: Int): Nothing = throw new NoSuchElementException()
 
   override def length: Int = 0
+
+  override def reverse: RList[Nothing] = this
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -67,6 +71,29 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
 
     lengthHelper(this, 0)
   }
+
+  // Complexity: O(N)
+  override def reverse: RList[T] = {
+    @tailrec
+    def reverseListHelper(list: RList[T], accumulator: RList[T]): RList[T] = {
+      if (list.isEmpty) accumulator
+      else reverseListHelper(list.tail, list.head :: accumulator)
+    }
+
+    reverseListHelper(this, RNil)
+  }
+}
+
+object RList {
+  def from[T](iterable: Iterable[T]): RList[T] = {
+    @tailrec
+    def fromHelper(it: Iterable[T], accumulator: RList[T]): RList[T] = {
+      if (it.isEmpty) accumulator
+      else fromHelper(it.tail, it.head :: accumulator)
+    }
+
+    fromHelper(iterable, RNil).reverse
+  }
 }
 
 object ListProblems extends App {
@@ -87,4 +114,8 @@ object ListProblems extends App {
   // NoSuchElementException
 
   println(list.length) // 6
+  println(list.reverse) // [7, 8, 9, 3, 2, 1]
+
+  val bigList = RList.from(1 to 10000)
+  println(bigList.length) // 10000
 }
