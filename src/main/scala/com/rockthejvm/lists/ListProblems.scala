@@ -27,6 +27,8 @@ abstract class RList[+T] {
   def flatMap[S](f: T => RList[S]): RList[S]
 
   def filter(f: T => Boolean): RList[T]
+
+  def runLengthEncoding: RList[(T, Int)]
 }
 
 case object RNil extends RList[Nothing] {
@@ -53,6 +55,8 @@ case object RNil extends RList[Nothing] {
   override def flatMap[S](f: Nothing => RList[S]): RList[S] = RNil
 
   override def filter(f: Nothing => Boolean): RList[Nothing] = RNil
+
+  override def runLengthEncoding: RList[(Nothing, Int)] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -61,9 +65,12 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
   override def toString: String = {
     @tailrec
     def toStringHelper(remaining: RList[T], result: String): String = {
-      if (remaining.isEmpty) result
-      else if (remaining.tail.isEmpty) s"$result${remaining.head}"
-      else toStringHelper(remaining.tail, s"$result${remaining.head}, ")
+      if (remaining.isEmpty)
+        result
+      else if (remaining.tail.isEmpty)
+        s"$result${remaining.head}"
+      else
+        toStringHelper(remaining.tail, s"$result${remaining.head}, ")
     }
 
     s"[${toStringHelper(this, "")}]"
@@ -73,20 +80,26 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
   override def apply(index: Int): T = {
     @tailrec
     def applyHelper(remaining: RList[T], currentIndex: Int): T = {
-      if (currentIndex == index) remaining.head
-      else applyHelper(remaining.tail, currentIndex + 1)
+      if (currentIndex == index)
+        remaining.head
+      else
+        applyHelper(remaining.tail, currentIndex + 1)
     }
 
-    if (index < 0) throw new NoSuchElementException()
-    else applyHelper(this, 0)
+    if (index < 0)
+      throw new NoSuchElementException()
+    else
+      applyHelper(this, 0)
   }
 
   // Complexity: O(N)
   override def length: Int = {
     @tailrec
     def lengthHelper(list: RList[T], accumulator: Int): Int = {
-      if (list.isEmpty) accumulator
-      else lengthHelper(list.tail, accumulator + 1)
+      if (list.isEmpty)
+        accumulator
+      else
+        lengthHelper(list.tail, accumulator + 1)
     }
 
     lengthHelper(this, 0)
@@ -96,8 +109,10 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
   override def reverse: RList[T] = {
     @tailrec
     def reverseListHelper(list: RList[T], accumulator: RList[T]): RList[T] = {
-      if (list.isEmpty) accumulator
-      else reverseListHelper(list.tail, list.head :: accumulator)
+      if (list.isEmpty)
+        accumulator
+      else
+        reverseListHelper(list.tail, list.head :: accumulator)
     }
 
     reverseListHelper(this, RNil)
@@ -108,8 +123,10 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
   override def ++[S >: T](anotherList: RList[S]): RList[S] = {
     @tailrec
     def concatHelper(remainingList: RList[S], accumulator: RList[S]): RList[S] = {
-      if (remainingList.isEmpty) accumulator
-      else concatHelper(remainingList.tail, remainingList.head :: accumulator)
+      if (remainingList.isEmpty)
+        accumulator
+      else
+        concatHelper(remainingList.tail, remainingList.head :: accumulator)
     }
 
     concatHelper(this.reverse, anotherList)
@@ -118,20 +135,26 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
   override def removeAt(index: Int): RList[T] = {
     @tailrec
     def removeAtHelper(currentIndex: Int, left: RList[T], right: RList[T]): RList[T] = {
-      if (currentIndex == index) left.reverse ++ right.tail
-      else removeAtHelper(currentIndex + 1, right.head :: left, right.tail)
+      if (currentIndex == index)
+        left.reverse ++ right.tail
+      else
+        removeAtHelper(currentIndex + 1, right.head :: left, right.tail)
     }
 
-    if (index < 0) this
-    else removeAtHelper(0, RNil, this)
+    if (index < 0)
+      this
+    else
+      removeAtHelper(0, RNil, this)
   }
 
   // Complexity: O(N)
   override def map[S](f: T => S): RList[S] = {
     @tailrec
     def mapHelper(remainingList: RList[T], accumulator: RList[S]): RList[S] = {
-      if (remainingList.isEmpty) accumulator.reverse
-      else mapHelper(remainingList.tail, f(remainingList.head) :: accumulator)
+      if (remainingList.isEmpty)
+        accumulator.reverse
+      else
+        mapHelper(remainingList.tail, f(remainingList.head) :: accumulator)
     }
 
     mapHelper(this, RNil)
@@ -140,8 +163,10 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
   override def flatMap[S](f: T => RList[S]): RList[S] = {
     @tailrec
     def flatMapHelper(remainingList: RList[T], accumulator: RList[S]): RList[S] = {
-      if (remainingList.isEmpty) accumulator
-      else flatMapHelper(remainingList.tail, accumulator ++ f(remainingList.head))
+      if (remainingList.isEmpty)
+        accumulator
+      else
+        flatMapHelper(remainingList.tail, accumulator ++ f(remainingList.head))
     }
 
     flatMapHelper(this, RNil)
@@ -150,25 +175,76 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
   override def filter(f: T => Boolean): RList[T] = {
     @tailrec
     def filterHelper(remainingList: RList[T], accumulator: RList[T]): RList[T] = {
-      if (remainingList.isEmpty) accumulator.reverse
-      else if (f(remainingList.head)) filterHelper(remainingList.tail, remainingList.head :: accumulator)
-      else filterHelper(remainingList.tail, accumulator)
+      if (remainingList.isEmpty)
+        accumulator.reverse
+      else if (f(remainingList.head))
+        filterHelper(remainingList.tail, remainingList.head :: accumulator)
+      else
+        filterHelper(remainingList.tail, accumulator)
     }
 
     filterHelper(this, RNil)
   }
+
+  /*
+  My Solution
+  // Complexity: O(N)
+  override def runLengthEncoding: RList[(T, Int)] = {
+    def runLengthEncodingHelper(left: RList[T], right: RList[T], accumulator: RList[(T, Int)]): RList[(T, Int)] = {
+      if (right.isEmpty)
+        accumulator.reverse
+      else if (left.isEmpty)
+        runLengthEncodingHelper(right.head :: left, right.tail, (right.head, 1) :: accumulator)
+      else if (left.head == right.head)
+        runLengthEncodingHelper(
+          right.head :: left,
+          right.tail,
+          (accumulator.head._1, accumulator.head._2 + 1) :: accumulator.removeAt(0)
+        )
+      else
+        runLengthEncodingHelper(right.head :: left, right.tail, (right.head, 1) :: accumulator)
+    }
+
+    runLengthEncodingHelper(RNil, this, RNil)
+  }
+   */
+
+  // Daniel's Solution
+  override def runLengthEncoding: RList[(T, Int)] = {
+    @tailrec
+    def runLengthEncodingHelper(
+        remaining: RList[T],
+        currentTuple: (T, Int),
+        accumulator: RList[(T, Int)]
+    ): RList[(T, Int)] = {
+      if (remaining.isEmpty && currentTuple._2 == 0)
+        accumulator
+      else if (remaining.isEmpty)
+        currentTuple :: accumulator
+      else if (remaining.head == currentTuple._1)
+        runLengthEncodingHelper(remaining.tail, currentTuple.copy(_2 = currentTuple._2 + 1), accumulator)
+      else
+        runLengthEncodingHelper(remaining.tail, (remaining.head, 1), currentTuple :: accumulator)
+    }
+    runLengthEncodingHelper(this.tail, (this.head, 1), RNil).reverse
+  }
+
 }
 
 object RList {
+
   def from[T](iterable: Iterable[T]): RList[T] = {
     @tailrec
     def fromHelper(it: Iterable[T], accumulator: RList[T]): RList[T] = {
-      if (it.isEmpty) accumulator
-      else fromHelper(it.tail, it.head :: accumulator)
+      if (it.isEmpty)
+        accumulator
+      else
+        fromHelper(it.tail, it.head :: accumulator)
     }
 
     fromHelper(iterable, RNil).reverse
   }
+
 }
 
 object ListProblems extends App {
@@ -208,4 +284,7 @@ object ListProblems extends App {
   println(list.map(_ * 2)) // [2, 4, 6, 18, 16, 14]
   println(list.flatMap(x => x :: x + 1 :: RNil)) // [1, 2, 2, 3, 3, 4, 9, 10, 8, 9, 7, 8]
   println(list.filter(_ % 2 == 0)) // [2, 8]
+
+  val listRLE = 1 :: 1 :: 2 :: 3 :: 3 :: 3 :: 3 :: 3 :: 4 :: 4 :: 4 :: 5 :: 6 :: RNil
+  println(listRLE.runLengthEncoding) // [(1,2), (2,1), (3,5), (4,3), (5,1), (6,1)]
 }
