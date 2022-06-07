@@ -29,6 +29,8 @@ abstract class RList[+T] {
   def filter(f: T => Boolean): RList[T]
 
   def runLengthEncoding: RList[(T, Int)]
+
+  def duplicateEach(k: Int): RList[T]
 }
 
 case object RNil extends RList[Nothing] {
@@ -57,6 +59,8 @@ case object RNil extends RList[Nothing] {
   override def filter(f: Nothing => Boolean): RList[Nothing] = RNil
 
   override def runLengthEncoding: RList[(Nothing, Int)] = RNil
+
+  override def duplicateEach(k: Int): RList[Nothing] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -229,6 +233,53 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     runLengthEncodingHelper(this.tail, (this.head, 1), RNil).reverse
   }
 
+  /*
+  My Solution:
+  override def duplicateEach(k: Int): RList[T] = {
+    @tailrec
+    def duplicateEachHelper(remainingList: RList[T], accumulator: RList[T]): RList[T] = {
+      if (remainingList.isEmpty || k == 0)
+        accumulator ++ remainingList
+      else
+        duplicateEachHelper(remainingList.tail, accumulator ++ getDuplicateList(remainingList.head, k))
+    }
+    duplicateEachHelper(this, RNil)
+  }
+
+  def getDuplicateList[S >: T](element: S, frequency: Int): RList[S] = {
+    @tailrec
+    def getDuplicateHelper(currentFrequency: Int, accumulator: RList[S]): RList[S] = {
+      if (currentFrequency == frequency)
+        accumulator
+      else
+        getDuplicateHelper(currentFrequency + 1, element :: accumulator)
+    }
+    getDuplicateHelper(0, RNil)
+  }
+   */
+
+  // Daniel's Solution
+  // Complexity: O(N * k)
+  override def duplicateEach(k: Int): RList[T] = {
+    @tailrec
+    def duplicateEachHelper(
+        remaining: RList[T],
+        currentElement: T,
+        nDuplications: Int,
+        accumulator: RList[T]
+    ): RList[T] = {
+      if (remaining.isEmpty && nDuplications == k)
+        accumulator.reverse
+      else if (remaining.isEmpty)
+        duplicateEachHelper(remaining, currentElement, nDuplications + 1, currentElement :: accumulator)
+      else if (nDuplications == k)
+        duplicateEachHelper(remaining.tail, remaining.head, 0, accumulator)
+      else
+        duplicateEachHelper(remaining, currentElement, nDuplications + 1, currentElement :: accumulator)
+    }
+    duplicateEachHelper(this.tail, this.head, 0, RNil)
+  }
+
 }
 
 object RList {
@@ -287,4 +338,6 @@ object ListProblems extends App {
 
   val listRLE = 1 :: 1 :: 2 :: 3 :: 3 :: 3 :: 3 :: 3 :: 4 :: 4 :: 4 :: 5 :: 6 :: RNil
   println(listRLE.runLengthEncoding) // [(1,2), (2,1), (3,5), (4,3), (5,1), (6,1)]
+
+  println(list.duplicateEach(2)) // [1, 1, 2, 2, 3, 3, 9, 9, 8, 8, 7, 7]
 }
