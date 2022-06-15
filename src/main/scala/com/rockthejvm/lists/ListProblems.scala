@@ -1,6 +1,7 @@
 package com.rockthejvm.lists
 
 import scala.annotation.{tailrec, targetName}
+import scala.jdk.Accumulator
 
 abstract class RList[+T] {
   def head: T
@@ -31,6 +32,8 @@ abstract class RList[+T] {
   def runLengthEncoding: RList[(T, Int)]
 
   def duplicateEach(k: Int): RList[T]
+
+  def rotate(k: Int): RList[T]
 }
 
 case object RNil extends RList[Nothing] {
@@ -61,6 +64,8 @@ case object RNil extends RList[Nothing] {
   override def runLengthEncoding: RList[(Nothing, Int)] = RNil
 
   override def duplicateEach(k: Int): RList[Nothing] = RNil
+
+  override def rotate(k: Int): RList[Nothing] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -280,6 +285,22 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     duplicateEachHelper(this.tail, this.head, 0, RNil)
   }
 
+  // Complexity: O(max(N, K)
+  override def rotate(k: Int): RList[T] = {
+    @tailrec
+    def rotateHelper(remaining: RList[T], rotationsLeft: Int, accumulator: RList[T]): RList[T] = {
+      if (remaining.isEmpty && rotationsLeft == 0)
+        this
+      else if (remaining.isEmpty)
+        rotateHelper(this, rotationsLeft, RNil)
+      else if (rotationsLeft == 0)
+        remaining ++ accumulator.reverse
+      else
+        rotateHelper(remaining.tail, rotationsLeft - 1, remaining.head :: accumulator)
+    }
+    rotateHelper(this, k, RNil)
+  }
+
 }
 
 object RList {
@@ -340,4 +361,10 @@ object ListProblems extends App {
   println(listRLE.runLengthEncoding) // [(1,2), (2,1), (3,5), (4,3), (5,1), (6,1)]
 
   println(list.duplicateEach(2)) // [1, 1, 2, 2, 3, 3, 9, 9, 8, 8, 7, 7]
+
+  val list3 = 1 :: 2 :: 3 :: RNil
+
+  println(list3.rotate(2)) // [3, 1, 2]
+  println(list3.rotate(3)) // [1, 2, 3]
+  println(list3.rotate(6)) // [1, 2, 3]
 }
