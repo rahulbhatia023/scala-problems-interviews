@@ -2,6 +2,7 @@ package com.rockthejvm.lists
 
 import scala.annotation.{tailrec, targetName}
 import scala.jdk.Accumulator
+import scala.util.Random
 
 abstract class RList[+T] {
   def head: T
@@ -34,6 +35,8 @@ abstract class RList[+T] {
   def duplicateEach(k: Int): RList[T]
 
   def rotate(k: Int): RList[T]
+
+  def sample(k: Int): RList[T]
 }
 
 case object RNil extends RList[Nothing] {
@@ -66,6 +69,8 @@ case object RNil extends RList[Nothing] {
   override def duplicateEach(k: Int): RList[Nothing] = RNil
 
   override def rotate(k: Int): RList[Nothing] = RNil
+
+  override def sample(k: Int): RList[Nothing] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -301,6 +306,25 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     rotateHelper(this, k, RNil)
   }
 
+  // Complexity: O(N * k)
+  override def sample(k: Int): RList[T] = {
+    val random = new Random(System.currentTimeMillis())
+    val maxIndex = this.length
+
+    @tailrec
+    def sampleHelper(nRemaining: Int, accumulator: RList[T]): RList[T] = {
+      if (nRemaining == 0)
+        accumulator
+      else
+        sampleHelper(nRemaining - 1, this(random.nextInt(maxIndex)) :: accumulator)
+    }
+
+    if (k < 0)
+      RNil
+    else
+      sampleHelper(k, RNil)
+  }
+
 }
 
 object RList {
@@ -367,4 +391,6 @@ object ListProblems extends App {
   println(list3.rotate(2)) // [3, 1, 2]
   println(list3.rotate(3)) // [1, 2, 3]
   println(list3.rotate(6)) // [1, 2, 3]
+
+  println(list.sample(5))
 }
