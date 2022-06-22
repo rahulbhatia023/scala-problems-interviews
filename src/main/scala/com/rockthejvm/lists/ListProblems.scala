@@ -392,5 +392,5 @@ object ListProblems extends App {
   println(list3.rotate(3)) // [1, 2, 3]
   println(list3.rotate(6)) // [1, 2, 3]
 
-  println(list.sample(5))
+  println(list.sample(3)) // [1, 3, 7]
 }
