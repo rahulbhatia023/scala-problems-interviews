@@ -28,6 +28,8 @@ abstract class RList[+T] {
 
   def flatMap[S](f: T => RList[S]): RList[S]
 
+  def flatMapImproved[S](f: T => RList[S]): RList[S]
+
   def filter(f: T => Boolean): RList[T]
 
   def runLengthEncoding: RList[(T, Int)]
@@ -61,6 +63,8 @@ case object RNil extends RList[Nothing] {
   override def map[S](f: Nothing => S): RList[S] = RNil
 
   override def flatMap[S](f: Nothing => RList[S]): RList[S] = RNil
+
+  override def flatMapImproved[S](f: Nothing => RList[S]): RList[S] = RNil
 
   override def filter(f: Nothing => Boolean): RList[Nothing] = RNil
 
@@ -174,6 +178,7 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     mapHelper(this, RNil)
   }
 
+  // Complexity: O(Z ^ 2)
   override def flatMap[S](f: T => RList[S]): RList[S] = {
     @tailrec
     def flatMapHelper(remainingList: RList[T], accumulator: RList[S]): RList[S] = {
@@ -184,6 +189,29 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     }
 
     flatMapHelper(this, RNil)
+  }
+
+  // Complexity: O(N + Z) where N -> length of initial list, Z -> length of final list
+  override def flatMapImproved[S](f: T => RList[S]): RList[S] = {
+    @tailrec
+    def flatMapImprovedHelper(remaining: RList[T], accumulator: RList[RList[S]]): RList[S] = {
+      if (remaining.isEmpty)
+        concatenateAll(accumulator, RNil, RNil)
+      else
+        flatMapImprovedHelper(remaining.tail, f(remaining.head).reverse :: accumulator)
+    }
+
+    @tailrec
+    def concatenateAll(elements: RList[RList[S]], currentList: RList[S], accumulator: RList[S]): RList[S] = {
+      if (elements.isEmpty && currentList.isEmpty)
+        accumulator
+      else if (currentList.isEmpty)
+        concatenateAll(elements.tail, elements.head, accumulator)
+      else
+        concatenateAll(elements, currentList.tail, currentList.head :: accumulator)
+    }
+
+    flatMapImprovedHelper(this, RNil)
   }
 
   override def filter(f: T => Boolean): RList[T] = {
@@ -379,6 +407,7 @@ object ListProblems extends App {
 
   println(list.map(_ * 2)) // [2, 4, 6, 18, 16, 14]
   println(list.flatMap(x => x :: x + 1 :: RNil)) // [1, 2, 2, 3, 3, 4, 9, 10, 8, 9, 7, 8]
+  println(list.flatMapImproved(x => x :: x + 1 :: RNil)) // [1, 2, 2, 3, 3, 4, 9, 10, 8, 9, 7, 8]
   println(list.filter(_ % 2 == 0)) // [2, 8]
 
   val listRLE = 1 :: 1 :: 2 :: 3 :: 3 :: 3 :: 3 :: 3 :: 4 :: 4 :: 4 :: 5 :: 6 :: RNil
