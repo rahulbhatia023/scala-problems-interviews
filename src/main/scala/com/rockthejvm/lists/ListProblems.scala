@@ -39,6 +39,8 @@ abstract class RList[+T] {
   def rotate(k: Int): RList[T]
 
   def sample(k: Int): RList[T]
+
+  def sorted[S >: T](ordering: Ordering[S]): RList[S]
 }
 
 case object RNil extends RList[Nothing] {
@@ -75,6 +77,8 @@ case object RNil extends RList[Nothing] {
   override def rotate(k: Int): RList[Nothing] = RNil
 
   override def sample(k: Int): RList[Nothing] = RNil
+
+  override def sorted[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -94,7 +98,14 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     s"[${toStringHelper(this, "")}]"
   }
 
-  // Complexity: O(min(N, index)
+  /*
+        [1,2,3,4,5].apply(2) = applyHelper([1,2,3,4,5], 0)
+        = applyHelper([2,3,4,5], 1)
+        = applyHelper([3,4,5], 2)
+        = 3
+
+        Complexity: O(min(N, index))
+   */
   override def apply(index: Int): T = {
     @tailrec
     def applyHelper(remaining: RList[T], currentIndex: Int): T = {
@@ -110,7 +121,17 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
       applyHelper(this, 0)
   }
 
-  // Complexity: O(N)
+  /*
+        [1,2,3,4,5].length = lengthHelper([1,2,3,4,5], 0)
+        = lengthHelper([2,3,4,5], 1)
+        = lengthHelper([3,4,5], 2)
+        = lengthHelper([4,5], 3)
+        = lengthHelper([5], 4)
+        = lengthHelper([], 5)
+        = 5
+
+        Complexity: O(N)
+   */
   override def length: Int = {
     @tailrec
     def lengthHelper(list: RList[T], accumulator: Int): Int = {
@@ -123,21 +144,39 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     lengthHelper(this, 0)
   }
 
-  // Complexity: O(N)
+  /*
+        [1,2,3,4].reverse = reverseHelper([1,2,3,4], RNil)
+        = reverseHelper([2,3,4], [1])
+        = reverseHelper([3,4], [2,1])
+        = reverseHelper([4], [3,2,1])
+        = reverseHelper([], [4,3,2,1])
+        = [4,3,2,1]
+
+        Complexity: O(N)
+   */
   override def reverse: RList[T] = {
     @tailrec
-    def reverseListHelper(list: RList[T], accumulator: RList[T]): RList[T] = {
+    def reverseHelper(list: RList[T], accumulator: RList[T]): RList[T] = {
       if (list.isEmpty)
         accumulator
       else
-        reverseListHelper(list.tail, list.head :: accumulator)
+        reverseHelper(list.tail, list.head :: accumulator)
     }
 
-    reverseListHelper(this, RNil)
+    reverseHelper(this, RNil)
   }
 
-  // Concatenation
-  // Complexity: O(M + N), where M and N are the length of respective lists
+  /*
+        Concatenation
+
+        [1,2,3] ++ [4,5] = concatHelper([3,2,1], [4,5])
+        = concatHelper([2,1], [3,4,5])
+        = concatHelper([1], [2,3,4,5])
+        = concatHelper([], [1,2,3,4,5])
+        = [1,2,3,4,5]
+
+        Complexity: O(M + N), where M and N are the length of respective lists
+   */
   override def ++[S >: T](anotherList: RList[S]): RList[S] = {
     @tailrec
     def concatHelper(remainingList: RList[S], accumulator: RList[S]): RList[S] = {
@@ -150,22 +189,39 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     concatHelper(this.reverse, anotherList)
   }
 
+  /*
+        [1,2,3,4,5].removeAt(2) = removeAtHelper([1,2,3,4,5], 0, [])
+        = removeAtHelper([2,3,4,5], 1, [1])
+        = removeAtHelper([3,4,5], 2, [2,1])
+        = [2,1].reverse ++ [4,5]
+
+        Complexity: O(N)
+   */
   override def removeAt(index: Int): RList[T] = {
     @tailrec
-    def removeAtHelper(currentIndex: Int, left: RList[T], right: RList[T]): RList[T] = {
+    def removeAtHelper(left: RList[T], currentIndex: Int, right: RList[T]): RList[T] = {
       if (currentIndex == index)
-        left.reverse ++ right.tail
+        right.reverse ++ left.tail
       else
-        removeAtHelper(currentIndex + 1, right.head :: left, right.tail)
+        removeAtHelper(left.tail, currentIndex + 1, left.head :: right)
     }
 
     if (index < 0)
       this
     else
-      removeAtHelper(0, RNil, this)
+      removeAtHelper(this, 0, RNil)
   }
 
-  // Complexity: O(N)
+  /*
+        [1,2,3].map(x => x + 1) = mapHelper([1,2,3], [])
+        = mapHelper([2,3], [2])
+        = mapHelper([3], [3, 2])
+        = mapHelper([], [4,3,2])
+        = [4,3,2].reverse
+        = [2,3,4]
+
+        Complexity: O(N)
+   */
   override def map[S](f: T => S): RList[S] = {
     @tailrec
     def mapHelper(remainingList: RList[T], accumulator: RList[S]): RList[S] = {
@@ -178,7 +234,15 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     mapHelper(this, RNil)
   }
 
-  // Complexity: O(Z ^ 2)
+  /*
+        [1,2,3].flatMap(x => [x, 2 * x]) = flatMapHelper([1,2,3], [])
+        = flatMapHelper([2,3], [] ++ [1,2])
+        = flatMapHelper([3], [1,2] ++ [2,4])
+        = flatMapHelper([], [1,2] ++ [2,4] ++ [3,6])
+        = [1,2,2,4,3,6]
+
+        Complexity: O(Z^2)
+   */
   override def flatMap[S](f: T => RList[S]): RList[S] = {
     @tailrec
     def flatMapHelper(remainingList: RList[T], accumulator: RList[S]): RList[S] = {
@@ -191,7 +255,25 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     flatMapHelper(this, RNil)
   }
 
-  // Complexity: O(N + Z) where N -> length of initial list, Z -> length of final list
+  /*
+        [1,2,3].flatMap(x => [x, 2 * x]) = flatMapImprovedHelper([1,2,3], [])
+        = flatMapImprovedHelper([2,3], [[2,1]])
+        = flatMapImprovedHelper([3], [[4,2], [2,1]])
+        = flatMapImprovedHelper([], [[6,3], [4,2], [2,1]])
+        = concatenateAll([[6,3], [4,2], [2,1]], [], [])
+        = concatenateAll([[4,2], [2,1]], [6,3], [])
+        = concatenateAll([[4,2], [2,1]], [3], [6])
+        = concatenateAll([[4,2], [2,1]], [], [3,6])
+        = concatenateAll([[2,1]], [4,2], [3,6])
+        = concatenateAll([[2,1]], [2], [4,3,6])
+        = concatenateAll([[2,1]], [], [2,4,3,6])
+        = concatenateAll([], [2,1], [2,4,3,6])
+        = concatenateAll([], [1], [2,2,4,3,6])
+        = concatenateAll([], [], [1,2,2,4,3,6])
+        = [1,2,2,4,3,6]
+
+        Complexity: O(N + Z) where N -> length of initial list, Z -> length of final list
+   */
   override def flatMapImproved[S](f: T => RList[S]): RList[S] = {
     @tailrec
     def flatMapImprovedHelper(remaining: RList[T], accumulator: RList[RList[S]]): RList[S] = {
@@ -214,6 +296,17 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     flatMapImprovedHelper(this, RNil)
   }
 
+  /*
+        [1,2,3,4,5].filter(x => x % 2 == 0) = filterHelper([1,2,3,4,5], [])
+        = filterHelper([2,3,4,5], [])
+        = filterHelper([3,4,5], [2])
+        = filterHelper([4,5], [2])
+        = filterHelper([5], [4,2])
+        = filterHelper([], [4,2])
+        = [2,4]
+
+        Complexity: O(N)
+   */
   override def filter(f: T => Boolean): RList[T] = {
     @tailrec
     def filterHelper(remainingList: RList[T], accumulator: RList[T]): RList[T] = {
@@ -229,29 +322,18 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
   }
 
   /*
-  My Solution
-  // Complexity: O(N)
-  override def runLengthEncoding: RList[(T, Int)] = {
-    def runLengthEncodingHelper(left: RList[T], right: RList[T], accumulator: RList[(T, Int)]): RList[(T, Int)] = {
-      if (right.isEmpty)
-        accumulator.reverse
-      else if (left.isEmpty)
-        runLengthEncodingHelper(right.head :: left, right.tail, (right.head, 1) :: accumulator)
-      else if (left.head == right.head)
-        runLengthEncodingHelper(
-          right.head :: left,
-          right.tail,
-          (accumulator.head._1, accumulator.head._2 + 1) :: accumulator.removeAt(0)
-        )
-      else
-        runLengthEncodingHelper(right.head :: left, right.tail, (right.head, 1) :: accumulator)
-    }
+        [1,1,1,2,2,3,4,4,4,5].rle = runLengthEncodingHelper([1,1,2,2,3,4,4,4,5], (1, 1), []) =
+        = runLengthEncodingHelper([1,2,2,3,4,4,4,5], (1,2), [])
+        = runLengthEncodingHelper([2,2,3,4,4,4,5], (1,3), [])
+        = runLengthEncodingHelper([2,3,4,4,4,5], (2,1), [(1,3)])
+        = runLengthEncodingHelper([3,4,4,4,5], (2,2), [(1,3)])
+        = runLengthEncodingHelper([4,4,4,5], (3,1), [(2,2), (1,3)]
+        = ...
+        = [(5,1), (4,3), (3,1), (2,2), (1,3)].reverse
+        = [(1,3), (2,2), (3,1), (4,3), (5,1)]
 
-    runLengthEncodingHelper(RNil, this, RNil)
-  }
+        Complexity: O(N)
    */
-
-  // Daniel's Solution
   override def runLengthEncoding: RList[(T, Int)] = {
     @tailrec
     def runLengthEncodingHelper(
@@ -272,32 +354,19 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
   }
 
   /*
-  My Solution:
-  override def duplicateEach(k: Int): RList[T] = {
-    @tailrec
-    def duplicateEachHelper(remainingList: RList[T], accumulator: RList[T]): RList[T] = {
-      if (remainingList.isEmpty || k == 0)
-        accumulator ++ remainingList
-      else
-        duplicateEachHelper(remainingList.tail, accumulator ++ getDuplicateList(remainingList.head, k))
-    }
-    duplicateEachHelper(this, RNil)
-  }
+        [1,2].duplicateEach(3) = duplicateEachHelper([2], 1, 0, [])
+        = duplicateEachHelper([2], 1, 1, [1])
+        = duplicateEachHelper([2], 1, 2, [1,1])
+        = duplicateEachHelper([2], 1, 3, [1,1,1])
+        = duplicateEachHelper([], 2, 0, [1,1,1])
+        = duplicateEachHelper([], 2, 1, [2,1,1,1])
+        = duplicateEachHelper([], 2, 2, [2,2,1,1,1])
+        = duplicateEachHelper([], 2, 3, [2,2,2,1,1,1])
+        = [2,2,2,1,1,1].reverse
+        = [1,1,1,2,2,2]
 
-  def getDuplicateList[S >: T](element: S, frequency: Int): RList[S] = {
-    @tailrec
-    def getDuplicateHelper(currentFrequency: Int, accumulator: RList[S]): RList[S] = {
-      if (currentFrequency == frequency)
-        accumulator
-      else
-        getDuplicateHelper(currentFrequency + 1, element :: accumulator)
-    }
-    getDuplicateHelper(0, RNil)
-  }
+        Complexity: O(N * K)
    */
-
-  // Daniel's Solution
-  // Complexity: O(N * k)
   override def duplicateEach(k: Int): RList[T] = {
     @tailrec
     def duplicateEachHelper(
@@ -318,7 +387,31 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     duplicateEachHelper(this.tail, this.head, 0, RNil)
   }
 
-  // Complexity: O(max(N, K)
+  /*
+        [1,2,3].rotate(3) == [1,2,3]
+        [1,2,3].rotate(6) == [1,2,3]
+        [1,2,3].rotate(4) == [1,2,3].rotate(1)
+
+        [1,2,3].rotate(1) = rotateHelper([1,2,3], 1, [])
+        = rotateHelper([2,3], 0, [1])
+        = [2,3,1]
+
+        [1,2,3].rotate(3) = rotateHelper([1,2,3], 3, [])
+        = rotateHelper([2,3], 2, [1])
+        = rotateHelper([3], 1, [2,1])
+        = rotateHelper([], 0, [3,2,1])
+        = [1,2,3]
+
+        [1,2,3].rotate(4) = rotateHelper([1,2,3], 4, [])
+        = rotateHelper([2,3], 3, [1])
+        = rotateHelper([3], 2, [2,1])
+        = rotateHelper([], 1, [3,2,1])
+        = rotateHelper([1,2,3], 1, [])
+        = rotateHelper([2,3], 0, [1])
+        = [2,3,1]
+
+        Complexity: O(max(N, K))
+   */
   override def rotate(k: Int): RList[T] = {
     @tailrec
     def rotateHelper(remaining: RList[T], rotationsLeft: Int, accumulator: RList[T]): RList[T] = {
@@ -334,7 +427,15 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     rotateHelper(this, k, RNil)
   }
 
-  // Complexity: O(N * k)
+  /*
+        [1,2,3,4,5].sample(3) = sampleHelper(3, [])
+        = sampleHelper(2, [2])
+        = sampleHelper(1, [4,2])
+        = sampleHelper(0, [4,4,2])
+        = [4,4,2]
+
+        Complexity: O(N * K)
+   */
   override def sample(k: Int): RList[T] = {
     val random = new Random(System.currentTimeMillis())
     val maxIndex = this.length
@@ -351,6 +452,49 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
       RNil
     else
       sampleHelper(k, RNil)
+  }
+
+  // Insertion Sort
+  override def sorted[S >: T](ordering: Ordering[S]): RList[S] = {
+    /*
+        [3,1,4,2,5].sorted = sortedHelper([3,1,4,2,5], []) =
+          = sortedHelper([1,4,2,5], [3])
+          = sortedHelper([4,2,5], [1,3])
+          = sortedHelper([2,5], [1,3,4])
+          = sortedHelper([5], [1,2,3,4])
+          = sortedHelper([], [1,2,3,4,5])
+          = [1,2,3,4,5]
+
+          Complexity: O(N^2)
+     */
+
+    @tailrec
+    def sortedHelper(remaining: RList[T], accumulator: RList[S]): RList[S] = {
+      if (remaining.isEmpty)
+        accumulator
+      else
+        sortedHelper(remaining.tail, insertSorted(remaining.head, RNil, accumulator))
+    }
+
+    /*
+        insertSorted(4, [], [1,2,3,5]) =
+        insertSorted(4, [1], [2,3,5]) =
+        insertSorted(4, [2,1], [3,5]) =
+        insertSorted(4, [3,2,1], [5]) =
+        [3,2,1].reverse + (4 :: [5]) =
+        [1,2,3,4,5]
+
+        Complexity: O(N)
+     */
+    @tailrec
+    def insertSorted(element: T, before: RList[S], after: RList[S]): RList[S] = {
+      if (after.isEmpty || ordering.lteq(element, after.head))
+        before.reverse ++ (element :: after)
+      else
+        insertSorted(element, after.head :: before, after.tail)
+    }
+
+    sortedHelper(this, RNil)
   }
 
 }
@@ -372,21 +516,21 @@ object RList {
 }
 
 object ListProblems extends App {
-  //val list = RNil.::(3).::(2).::(1)
+//val list = RNil.::(3).::(2).::(1)
   val list = 1 :: 2 :: 3 :: 9 :: 8 :: 7 :: RNil
 
   println(list)
-  // [1, 2, 3, 9, 8, 7]
+// [1, 2, 3, 9, 8, 7]
 
   println(list(0)) // 1
   println(list(1)) // 2
   println(list(2)) // 3
 
-  //println(list(-1))
-  // NoSuchElementException
+//println(list(-1))
+// NoSuchElementException
 
-  // println(list(4))
-  // NoSuchElementException
+// println(list(4))
+// NoSuchElementException
 
   println(list.length) // 6
   println(list.reverse) // [7, 8, 9, 3, 2, 1]
@@ -402,8 +546,8 @@ object ListProblems extends App {
   println(list.removeAt(1)) // [1, 3, 9, 8, 7]
   println(list.removeAt(2)) // [1, 2, 9, 8, 7]
 
-  // println(list.removeAt(10))
-  // NoSuchElementException
+// println(list.removeAt(10))
+// NoSuchElementException
 
   println(list.map(_ * 2)) // [2, 4, 6, 18, 16, 14]
   println(list.flatMap(x => x :: x + 1 :: RNil)) // [1, 2, 2, 3, 3, 4, 9, 10, 8, 9, 7, 8]
@@ -422,4 +566,8 @@ object ListProblems extends App {
   println(list3.rotate(6)) // [1, 2, 3]
 
   println(list.sample(3)) // [1, 3, 7]
+
+  val list4 = 3 :: 1 :: 2 :: 4 :: 5 :: RNil
+  val ordering = Ordering.fromLessThan[Int](_ < _)
+  println(list4.sorted(ordering)) // [1, 2, 3, 4, 5]
 }
