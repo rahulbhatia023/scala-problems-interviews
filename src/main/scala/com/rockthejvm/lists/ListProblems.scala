@@ -461,23 +461,23 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
   // Insertion Sort
   override def insertionSort[S >: T](ordering: Ordering[S]): RList[S] = {
     /*
-        [3,1,4,2,5].insertionSort = sortedHelper([3,1,4,2,5], []) =
-          = sortedHelper([1,4,2,5], [3])
-          = sortedHelper([4,2,5], [1,3])
-          = sortedHelper([2,5], [1,3,4])
-          = sortedHelper([5], [1,2,3,4])
-          = sortedHelper([], [1,2,3,4,5])
+        [3,1,4,2,5].insertionSort = insertionSortHelper([3,1,4,2,5], []) =
+          = insertionSortHelper([1,4,2,5], [3])
+          = insertionSortHelper([4,2,5], [1,3])
+          = insertionSortHelper([2,5], [1,3,4])
+          = insertionSortHelper([5], [1,2,3,4])
+          = insertionSortHelper([], [1,2,3,4,5])
           = [1,2,3,4,5]
 
           Complexity: O(N^2)
      */
 
     @tailrec
-    def sortedHelper(remaining: RList[T], accumulator: RList[S]): RList[S] = {
+    def insertionSortHelper(remaining: RList[T], accumulator: RList[S]): RList[S] = {
       if (remaining.isEmpty)
         accumulator
       else
-        sortedHelper(remaining.tail, insertSorted(remaining.head, RNil, accumulator))
+        insertionSortHelper(remaining.tail, insertSorted(remaining.head, RNil, accumulator))
     }
 
     /*
@@ -498,7 +498,7 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
         insertSorted(element, after.head :: before, after.tail)
     }
 
-    sortedHelper(this, RNil)
+    insertionSortHelper(this, RNil)
   }
 
   override def mergeSort[S >: T](ordering: Ordering[S]): RList[S] = {
@@ -506,15 +506,15 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     /*
           [3,1,2,5,4] => [[3],[1],[2],[5],[4]]
 
-          mst([[3],[1],[2],[5],[4]], []) =
-          = mst([[2],[5],[4]], [[1,3]])
-          = mst([[4]], [[2,5], [1,3]])
-          = mst([], [[4], [2,5], [1,3]]) =
-          = mst([[4], [2,5], [1,3]], [])
-          = mst([[1,3]], [[2,4,5]])
-          = mst([], [[1,3], [2,4,5]])
-          = mst([[1,3], [2,4,5]], [])
-          = mst([], [[1,2,3,4,5]])
+          mergeSortHelper([[3],[1],[2],[5],[4]], []) =
+          = mergeSortHelper([[2],[5],[4]], [[1,3]])
+          = mergeSortHelper([[4]], [[2,5], [1,3]])
+          = mergeSortHelper([], [[4], [2,5], [1,3]]) =
+          = mergeSortHelper([[4], [2,5], [1,3]], [])
+          = mergeSortHelper([[1,3]], [[2,4,5]])
+          = mergeSortHelper([], [[1,3], [2,4,5]])
+          = mergeSortHelper([[1,3], [2,4,5]], [])
+          = mergeSortHelper([], [[1,2,3,4,5]])
           = [1,2,3,4,5]
 
           Complexity: O(n * log(n))
