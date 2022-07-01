@@ -43,6 +43,8 @@ abstract class RList[+T] {
   def insertionSort[S >: T](ordering: Ordering[S]): RList[S]
 
   def mergeSort[S >: T](ordering: Ordering[S]): RList[S]
+
+  def quickSort[S >: T](ordering: Ordering[S]): RList[S]
 }
 
 case object RNil extends RList[Nothing] {
@@ -83,6 +85,8 @@ case object RNil extends RList[Nothing] {
   override def insertionSort[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
 
   override def mergeSort[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
+
+  override def quickSort[S >: Nothing](ordering: Ordering[S]): RList[S] = RNil
 }
 
 case class ::[+T](override val head: T, override val tail: RList[T]) extends RList[T] {
@@ -565,6 +569,64 @@ case class ::[+T](override val head: T, override val tail: RList[T]) extends RLi
     mergeSortHelper(this.map(x => x :: RNil), RNil)
   }
 
+  override def quickSort[S >: T](ordering: Ordering[S]): RList[S] = {
+    /*
+          [3,1,2,5,4].quickSort =
+          quickSortHelper([[3,1,2,5,4]], []) -> partition([1,2,5,4], 3, [], []) -> ([1,2], [5,4]) =
+          quickSortHelper([[1,2], [3], [5,4]], []) -> partition([2], 1, [], []) -> ([], [2]) =
+          quickSortHelper([[], [1], [2], [3], [5,4]], []) =
+          quickSortHelper([[1], [2], [3], [5,4]], []) =
+          quickSortHelper([[2], [3], [5,4]], [[1]]) =
+          quickSortHelper([[3], [5,4]], [[2], [1]]) =
+          quickSortHelper([[5,4]], [[3],[2],[1]]) -> partition([4], 5, [], []) -> ([4], []) =
+          quickSortHelper([[4], [5], []], [[3],[2],[1]]) =
+          quickSortHelper([[5], []], [[4],[3],[2],[1]]) =
+          quickSortHelper([[]], [[5],[4],[3],[2],[1]]) =
+          quickSortHelper([], [[5],[4],[3],[2],[1]]) =
+          [1,2,3,4,5]
+
+          Complexity: O(N^2) in the worst case (when the list is sorted)
+          on average O(N * log(N))
+     */
+    @tailrec
+    def quickSortHelper(remainingLists: RList[RList[T]], accumulator: RList[RList[T]]): RList[T] = {
+      if (remainingLists.isEmpty)
+        accumulator.flatMap(x => x).reverse
+      else if (remainingLists.head.isEmpty)
+        quickSortHelper(remainingLists.tail, accumulator)
+      else if (remainingLists.head.tail.isEmpty)
+        quickSortHelper(remainingLists.tail, remainingLists.head :: accumulator)
+      else {
+        val list = remainingLists.head
+        val pivot = list.head
+        val listToBePartitioned = list.tail
+        val (smaller, larger) = partition(listToBePartitioned, pivot, RNil, RNil)
+
+        quickSortHelper(smaller :: (pivot :: RNil) :: larger :: remainingLists.tail, accumulator)
+      }
+    }
+
+    /*
+          partition([1,2,5,4], 3, [], []) =
+          partition([2,5,4], 3, [1], []) =
+          partition([5,4], 3, [2,1], []) =
+          partition([4], 3, [2,1], [5]) =
+          partition([], 3, [2,1], [4,5])
+          = ([2,1], [4,5])
+     */
+    @tailrec
+    def partition(list: RList[T], pivot: T, smaller: RList[T], larger: RList[T]): (RList[T], RList[T]) = {
+      if (list.isEmpty)
+        (smaller, larger)
+      else if (ordering.lteq(list.head, pivot))
+        partition(list.tail, pivot, list.head :: smaller, larger)
+      else
+        partition(list.tail, pivot, smaller, list.head :: larger)
+    }
+
+    quickSortHelper(this :: RNil, RNil)
+  }
+
 }
 
 object RList {
@@ -640,4 +702,6 @@ object ListProblems extends App {
   println(list4.insertionSort(ordering)) // [1, 2, 3, 4, 5]
 
   println(list4.mergeSort(ordering)) // [1, 2, 3, 4, 5]
+
+  println(list4.quickSort(ordering)) // [1, 2, 3, 4, 5]
 }
