@@ -46,58 +46,58 @@ object NumberOps {
         isPrimeHelper(2)
     }
 
+    /*
+                  decomposeIntoPrimeFactors(11)
+                        = decomposeIntoPrimeFactorsHelper(11, 2, [])
+                          Math.sqrt(11) = 3.3
+                          if(2 > 3.3) -> false
+                          if(11 % 2 == 0) -> false
+                        = decomposeIntoPrimeFactorsHelper(11, 3, [])
+                          if(3 > 3.3) -> false
+                          if(11 % 3 == 0) -> false
+                        = decomposeIntoPrimeFactorsHelper(11, 4, [])
+                          if(4 > 3.3) -> true
+                        = 11 :: []
+                        = [11]
+
+                  decomposeIntoPrimeFactors(15)
+                        = decomposeIntoPrimeFactorsHelper(15, 2, [])
+                          Math.sqrt(15) = 3.8
+                          if(2 > 3.8) -> false
+                          if(15 % 2 == 0) -> false
+                        = decomposeIntoPrimeFactorsHelper(15, 3, [])
+                          if(3 > 3.8) -> false
+                          if(15 % 3 == 0) -> true
+                        = decomposeIntoPrimeFactorsHelper(5, 3, [3])
+                          Math.sqrt(5) = 2.2
+                          if(3 > 2.2) -> true
+                        = 5 :: [3]
+                        = [5, 3]
+
+                  decomposeIntoPrimeFactors(16)
+                        = decomposeIntoPrimeFactorsHelper(16, 2, [])
+                          Math.sqrt(16) = 4
+                          if(2 > 4) -> false
+                          if(16 % 2 == 0) -> true
+                        = decomposeIntoPrimeFactorsHelper(8, 2, [2])
+                          Math.sqrt(8) = 2.8
+                          if(2 > 2.8) -> false
+                          if(8 % 2 == 0) -> true
+                        = decomposeIntoPrimeFactorsHelper(4, 2, [2,2])
+                          Math.sqrt(4) = 2
+                          if(2 > 2) -> false
+                          if(4 % 2 == 0) -> true
+                        = decomposeIntoPrimeFactorsHelper(2, 2, [2,2,2])
+                          Math.sqrt(4) = 1.4
+                          if(2 > 1.4) -> true
+                        = 2 :: [2,2,2]
+                        = [2,2,2,2]
+
+                  Complexity: O(sqrt(N)); can be as low as: O(log(N))
+     */
     def decomposeIntoPrimeFactors: List[Int] = {
       assert(n >= 0)
 
-      /*
-              decomposeIntoPrimeFactors(11)
-                    = decomposeIntoPrimeFactorsHelper(11, 2, [])
-                      Math.sqrt(11) = 3.3
-                      if(2 > 3.3) -> false
-                      if(11 % 2 == 0) -> false
-                    = decomposeIntoPrimeFactorsHelper(11, 3, [])
-                      if(3 > 3.3) -> false
-                      if(11 % 3 == 0) -> false
-                    = decomposeIntoPrimeFactorsHelper(11, 4, [])
-                      if(4 > 3.3) -> true
-                    = 11 :: []
-                    = [11]
-
-              decomposeIntoPrimeFactors(15)
-                    = decomposeIntoPrimeFactorsHelper(15, 2, [])
-                      Math.sqrt(15) = 3.8
-                      if(2 > 3.8) -> false
-                      if(15 % 2 == 0) -> false
-                    = decomposeIntoPrimeFactorsHelper(15, 3, [])
-                      if(3 > 3.8) -> false
-                      if(15 % 3 == 0) -> true
-                    = decomposeIntoPrimeFactorsHelper(5, 3, [3])
-                      Math.sqrt(5) = 2.2
-                      if(3 > 2.2) -> true
-                    = 5 :: [3]
-                    = [5, 3]
-
-              decomposeIntoPrimeFactors(16)
-                    = decomposeIntoPrimeFactorsHelper(16, 2, [])
-                      Math.sqrt(16) = 4
-                      if(2 > 4) -> false
-                      if(16 % 2 == 0) -> true
-                    = decomposeIntoPrimeFactorsHelper(8, 2, [2])
-                      Math.sqrt(8) = 2.8
-                      if(2 > 2.8) -> false
-                      if(8 % 2 == 0) -> true
-                    = decomposeIntoPrimeFactorsHelper(4, 2, [2,2])
-                      Math.sqrt(4) = 2
-                      if(2 > 2) -> false
-                      if(4 % 2 == 0) -> true
-                    = decomposeIntoPrimeFactorsHelper(2, 2, [2,2,2])
-                      Math.sqrt(4) = 1.4
-                      if(2 > 1.4) -> true
-                    = 2 :: [2,2,2]
-                    = [2,2,2,2]
-
-              Complexity: O(sqrt(N)); can be as low as: O(log(N))
-       */
       @tailrec
       def decomposeIntoPrimeFactorsHelper(remaining: Int, currentDivisor: Int, accumulator: List[Int]): List[Int] = {
         if (currentDivisor > Math.sqrt(remaining))
