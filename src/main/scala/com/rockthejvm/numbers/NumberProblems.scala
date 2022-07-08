@@ -111,6 +111,31 @@ object NumberOps {
       decomposeIntoPrimeFactorsHelper(n, 2, List())
     }
 
+    def reverse: Int = {
+      @tailrec
+      def reverseHelper(remaining: Int, accumulator: Int): Int = {
+        if (remaining == 0)
+          accumulator
+        else {
+          val lastDigit = remaining % 10
+          val tentativeResult = accumulator * 10 + lastDigit
+
+          if ((accumulator >= 0) != (tentativeResult >= 0))
+            0
+          else
+            reverseHelper(remaining / 10, tentativeResult)
+        }
+      }
+
+      if (n == Int.MinValue)
+        0
+      else if (n >= 0)
+        reverseHelper(n, 0)
+      else
+        -reverseHelper(-n, 0)
+
+    }
+
   }
 
 }
@@ -135,4 +160,21 @@ object NumberProblems extends App {
   println(1.decomposeIntoPrimeFactors) // List(1)
   println(0.decomposeIntoPrimeFactors) // List(0)
   println(16.decomposeIntoPrimeFactors) // List(2, 2, 2, 2)
+
+  println("Positives:")
+  println(0.reverse) // 0
+  println(9.reverse) // 9
+  println(53.reverse) // 35
+  println(504.reverse) // 405
+  println(540.reverse) // 45
+  println(53678534.reverse) // 43587635
+  println(Int.MaxValue.reverse) // 0
+
+  println("Negatives:")
+  println(-9.reverse) // -9
+  println(-53.reverse) // -35
+  println(-504.reverse) // -405
+  println(-540.reverse) // -45
+  println(-53678534.reverse) // -43587635
+  println(Int.MinValue.reverse) // 0
 }
