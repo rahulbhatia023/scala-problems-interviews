@@ -17,4 +17,14 @@ object StringProblems extends App {
   }
 
   println(countCharacters("Scala")) // Map(S -> 1, c -> 1, a -> 2, l -> 1)
+
+  def checkAnagrams1(stringA: String, stringB: String): Boolean = countCharacters(stringA) == countCharacters(stringB)
+
+  def checkAnagrams2(stringA: String, stringB: String): Boolean = stringA.sorted == stringB.sorted
+
+  println(checkAnagrams1("desserts", "stressed")) // true
+  println(checkAnagrams1("scala", "haskell")) // false
+
+  println(checkAnagrams2("desserts", "stressed")) // true
+  println(checkAnagrams2("scala", "haskell")) // false
 }
