@@ -5,6 +5,17 @@ import scala.annotation.tailrec
 object ReorganizeString extends App {
 
   def reorganizeString(str: String): String = {
+    /*
+          "aaabc"
+          {a-3, b-1, c-1}
+          reorganizeStringHelper({a-3, b-1, c-1}, \0 "") =
+          reorganizeStringHelper({a-2, b-1, c-1}, 'a', "a") =
+          reorganizeStringHelper({a-2, c-1}, 'b', "ab") =
+          reorganizeStringHelper({a-1, c-1}, 'a', "aba") =
+          reorganizeStringHelper({a-1}, 'c', "abac") =
+          reorganizeStringHelper({}, 'a', "abaca") =
+          "abaca"
+     */
     @tailrec
     def reorganizeStringHelper(
         charCountMap: Map[Char, Int],
