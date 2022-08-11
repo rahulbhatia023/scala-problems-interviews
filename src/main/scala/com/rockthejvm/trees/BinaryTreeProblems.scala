@@ -16,6 +16,9 @@ sealed abstract class BTree[+T] {
   def collectLeaves: List[BTree[T]]
 
   def leafCount: Int
+
+  // number of nodes in the tree
+  val size: Int
 }
 
 case object BEnd extends BTree[Nothing] {
@@ -32,6 +35,8 @@ case object BEnd extends BTree[Nothing] {
   override def collectLeaves: List[BTree[Nothing]] = List()
 
   override def leafCount: Int = 0
+
+  override val size: Int = 0
 }
 
 case class BNode[+T](override val value: T, override val left: BTree[T], override val right: BTree[T])
@@ -79,6 +84,8 @@ case class BNode[+T](override val value: T, override val left: BTree[T], overrid
   }
 
   override def leafCount: Int = collectLeaves.length
+
+  override val size: Int = 1 + left.size + right.size
 }
 
 object BinaryTreeProblems extends App {
@@ -91,4 +98,7 @@ object BinaryTreeProblems extends App {
 
   println(tree.collectLeaves.map(_.value)) // List(8, 7, 5, 3)
   println(tree.leafCount) // 4
+
+  val bigTree = (1 to 10000).foldLeft[BTree[Int]](BEnd) { (tree, number) => BNode(number, tree, BEnd) }
+  println(bigTree.size) // 10000
 }
