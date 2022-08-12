@@ -108,7 +108,10 @@ case class BNode[+T](override val value: T, override val left: BTree[T], overrid
         collectNodesHelper(currentLevel + 1, expandedNodes)
       }
     }
-    collectNodesHelper(0, List(this))
+    if (level < 0)
+      List()
+    else
+      collectNodesHelper(0, List(this))
   }
 
 }
