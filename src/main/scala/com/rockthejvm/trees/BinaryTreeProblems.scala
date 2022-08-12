@@ -18,7 +18,9 @@ sealed abstract class BTree[+T] {
   def leafCount: Int
 
   // number of nodes in the tree
-  val size: Int
+  def size: Int
+
+  def collectNodes(level: Int): List[BTree[T]]
 }
 
 case object BEnd extends BTree[Nothing] {
@@ -37,6 +39,8 @@ case object BEnd extends BTree[Nothing] {
   override def leafCount: Int = 0
 
   override val size: Int = 0
+
+  override def collectNodes(level: Int): List[BTree[Nothing]] = List()
 }
 
 case class BNode[+T](override val value: T, override val left: BTree[T], override val right: BTree[T])
@@ -86,6 +90,27 @@ case class BNode[+T](override val value: T, override val left: BTree[T], overrid
   override def leafCount: Int = collectLeaves.length
 
   override val size: Int = 1 + left.size + right.size
+
+  override def collectNodes(level: Int): List[BTree[T]] = {
+    @tailrec
+    def collectNodesHelper(currentLevel: Int, currentNodes: List[BTree[T]]): List[BTree[T]] = {
+      if (currentNodes.isEmpty)
+        List()
+      else if (currentLevel == level)
+        currentNodes
+      else {
+        val expandedNodes =
+          for {
+            node <- currentNodes
+            child <- List(node.left, node.right) if !child.isEmpty
+          } yield child
+
+        collectNodesHelper(currentLevel + 1, expandedNodes)
+      }
+    }
+    collectNodesHelper(0, List(this))
+  }
+
 }
 
 object BinaryTreeProblems extends App {
@@ -101,4 +126,7 @@ object BinaryTreeProblems extends App {
 
   val bigTree = (1 to 10000).foldLeft[BTree[Int]](BEnd) { (tree, number) => BNode(number, tree, BEnd) }
   println(bigTree.size) // 10000
+
+  println(tree.collectNodes(2).map(_.value)) // List(3, 4, 7, 8)
+  println(tree.collectNodes(3).map(_.value)) // List(5)
 }
