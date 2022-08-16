@@ -201,4 +201,9 @@ object BinaryTreeProblems extends App {
 
   println(tree.collectNodes(2).map(_.value)) // List(3, 4, 7, 8)
   println(tree.collectNodes(3).map(_.value)) // List(5)
+
+  println(
+    tree.mirror
+  ) // BNode(1,BNode(6,BNode(8,BEnd,BEnd),BNode(7,BEnd,BEnd)),BNode(2,BNode(4,BNode(5,BEnd,BEnd),BEnd),BNode(3,BEnd,BEnd)))
+
 }
