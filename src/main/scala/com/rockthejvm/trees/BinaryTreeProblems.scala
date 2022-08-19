@@ -1,62 +1,66 @@
 package com.rockthejvm.trees
 
 import scala.annotation.tailrec
+import scala.collection.immutable.Queue
 
-sealed abstract class BTree[+T] {
+sealed abstract class Tree[+T] {
   def value: T
 
-  def left: BTree[T]
+  def left: Tree[T]
 
-  def right: BTree[T]
+  def right: Tree[T]
 
   def isEmpty: Boolean
 
   def isLeaf: Boolean
 
-  def collectLeaves: List[BTree[T]]
+  def collectLeaves: List[Tree[T]]
 
   def leafCount: Int
 
   // number of nodes in the tree
   def size: Int
 
-  def collectNodes(level: Int): List[BTree[T]]
+  def collectNodes(level: Int): List[Tree[T]]
 
-  def mirror: BTree[T]
+  def mirror: Tree[T]
 
-  def sameShapeAs[S >: T](that: BTree[S]): Boolean
+  def sameShapeAs[S >: T](that: Tree[S]): Boolean
 
   def isSymmetrical: Boolean
+
+  def toList: List[T]
 }
 
-case object BEnd extends BTree[Nothing] {
+case object End extends Tree[Nothing] {
   override def value: Nothing = throw new NoSuchElementException
 
-  override def left: BTree[Nothing] = throw new NoSuchElementException
+  override def left: Tree[Nothing] = throw new NoSuchElementException
 
-  override def right: BTree[Nothing] = throw new NoSuchElementException
+  override def right: Tree[Nothing] = throw new NoSuchElementException
 
   override def isEmpty: Boolean = true
 
   override def isLeaf: Boolean = false
 
-  override def collectLeaves: List[BTree[Nothing]] = List()
+  override def collectLeaves: List[Tree[Nothing]] = List()
 
   override def leafCount: Int = 0
 
   override val size: Int = 0
 
-  override def collectNodes(level: Int): List[BTree[Nothing]] = List()
+  override def collectNodes(level: Int): List[Tree[Nothing]] = List()
 
-  override def mirror: BTree[Nothing] = BEnd
+  override def mirror: Tree[Nothing] = End
 
-  override def sameShapeAs[S >: Nothing](that: BTree[S]): Boolean = that.isEmpty
+  override def sameShapeAs[S >: Nothing](that: Tree[S]): Boolean = that.isEmpty
 
   override def isSymmetrical: Boolean = true
+
+  override def toList: List[Nothing] = List()
 }
 
-case class BNode[+T](override val value: T, override val left: BTree[T], override val right: BTree[T])
-    extends BTree[T] {
+case class Node[+T](override val value: T, override val left: Tree[T], override val right: Tree[T]) extends Tree[T] {
   override def isEmpty: Boolean = false
 
   override def isLeaf: Boolean = left.isEmpty && right.isEmpty
@@ -81,9 +85,9 @@ case class BNode[+T](override val value: T, override val left: BTree[T], overrid
          clt([], [8,7,5,3]) =
          [8,7,5,3]
    */
-  override def collectLeaves: List[BTree[T]] = {
+  override def collectLeaves: List[Tree[T]] = {
     @tailrec
-    def collectLeavesHelper(todo: List[BTree[T]], leaves: List[BTree[T]]): List[BTree[T]] = {
+    def collectLeavesHelper(todo: List[Tree[T]], leaves: List[Tree[T]]): List[Tree[T]] = {
       if (todo.isEmpty)
         leaves
       else if (todo.head.isEmpty)
@@ -103,7 +107,7 @@ case class BNode[+T](override val value: T, override val left: BTree[T], overrid
 
   override val size: Int = 1 + left.size + right.size
 
-  override def collectNodes(level: Int): List[BTree[T]] = {
+  override def collectNodes(level: Int): List[Tree[T]] = {
     /*
                 _____1_____
                /           \
@@ -120,7 +124,7 @@ case class BNode[+T](override val value: T, override val left: BTree[T], overrid
      */
 
     @tailrec
-    def collectNodesHelper(currentLevel: Int, currentNodes: List[BTree[T]]): List[BTree[T]] = {
+    def collectNodesHelper(currentLevel: Int, currentNodes: List[Tree[T]]): List[Tree[T]] = {
       if (currentNodes.isEmpty)
         List()
       else if (currentLevel == level)
@@ -141,7 +145,7 @@ case class BNode[+T](override val value: T, override val left: BTree[T], overrid
       collectNodesHelper(0, List(this))
   }
 
-  override def mirror: BTree[T] = {
+  override def mirror: Tree[T] = {
     /*
             _____1_____                     _____1_____
            /           \                   /           \
@@ -169,7 +173,7 @@ case class BNode[+T](override val value: T, override val left: BTree[T], overrid
         Complexity: O(N)
      */
     @tailrec
-    def mirrorHelper(remaining: List[BTree[T]], expanded: Set[BTree[T]], done: List[BTree[T]]): BTree[T] = {
+    def mirrorHelper(remaining: List[Tree[T]], expanded: Set[Tree[T]], done: List[Tree[T]]): Tree[T] = {
       if (remaining.isEmpty)
         done.head
       else {
@@ -181,7 +185,7 @@ case class BNode[+T](override val value: T, override val left: BTree[T], overrid
         else {
           val newLeft = done.head
           val newRight = done.tail.head
-          val newNode = BNode(node.value, newLeft, newRight)
+          val newNode = Node(node.value, newLeft, newRight)
 
           mirrorHelper(remaining.tail, expanded, newNode :: done.drop(2))
         }
@@ -214,9 +218,9 @@ case class BNode[+T](override val value: T, override val left: BTree[T], overrid
 
           Complexity: O(max(N1, N2))
    */
-  override def sameShapeAs[S >: T](that: BTree[S]): Boolean = {
+  override def sameShapeAs[S >: T](that: Tree[S]): Boolean = {
     @tailrec
-    def sameShapeAsHelper(thisRemaining: List[BTree[S]], thatRemaining: List[BTree[S]]): Boolean = {
+    def sameShapeAsHelper(thisRemaining: List[Tree[S]], thatRemaining: List[Tree[S]]): Boolean = {
       if (thisRemaining.isEmpty)
         thatRemaining.isEmpty
       else if (thatRemaining.isEmpty)
@@ -241,20 +245,87 @@ case class BNode[+T](override val value: T, override val left: BTree[T], overrid
   }
 
   override def isSymmetrical: Boolean = sameShapeAs(this.mirror)
+
+  override def toList: List[T] = {
+    @tailrec
+    def preOrderTraversal(stack: List[Tree[T]], visited: Set[Tree[T]], accumulator: Queue[T]): List[T] = {
+      if (stack.isEmpty)
+        accumulator.toList
+      else {
+        val node = stack.head
+
+        if (node.isEmpty)
+          preOrderTraversal(stack.tail, visited, accumulator)
+        else if (node.isLeaf || visited.contains(node))
+          preOrderTraversal(stack.tail, visited, accumulator :+ node.value)
+        else
+          preOrderTraversal(node :: node.left :: node.right :: stack.tail, visited + node, accumulator)
+      }
+    }
+
+    @tailrec
+    def inOrderTraversal(stack: List[Tree[T]], visited: Set[Tree[T]], accumulator: Queue[T]): List[T] = {
+      if (stack.isEmpty)
+        accumulator.toList
+      else {
+        val node = stack.head
+
+        if (node.isEmpty)
+          inOrderTraversal(stack.tail, visited, accumulator)
+        else if (node.isLeaf || visited.contains(node))
+          inOrderTraversal(stack.tail, visited, accumulator :+ node.value)
+        else
+          inOrderTraversal(node.left :: node :: node.right :: stack.tail, visited + node, accumulator)
+      }
+    }
+
+    @tailrec
+    def postOrderTraversal(stack: List[Tree[T]], visited: Set[Tree[T]], accumulator: Queue[T]): List[T] = {
+      if (stack.isEmpty)
+        accumulator.toList
+      else {
+        val node = stack.head
+
+        if (node.isEmpty)
+          postOrderTraversal(stack.tail, visited, accumulator)
+        else if (node.isLeaf || visited.contains(node))
+          postOrderTraversal(stack.tail, visited, accumulator :+ node.value)
+        else
+          postOrderTraversal(node.left :: node.right :: node :: stack.tail, visited + node, accumulator)
+      }
+    }
+
+    @tailrec
+    def perLevelTraversal(level: List[Tree[T]], accumulator: Queue[Tree[T]]): List[T] = {
+      if (level.isEmpty)
+        accumulator.map(_.value).toList
+      else
+        perLevelTraversal(
+          level.flatMap(node => List(node.left, node.right).filter(!_.isEmpty)),
+          accumulator ++ level
+        )
+    }
+
+    // preOrderTraversal(List(this), Set(), Queue())
+    // inOrderTraversal(List(this), Set(), Queue())
+    // postOrderTraversal(List(this), Set(), Queue())
+    perLevelTraversal(List(this), Queue())
+  }
+
 }
 
 object BinaryTreeProblems extends App {
 
-  val tree = BNode(
+  val tree = Node(
     1,
-    BNode(2, BNode(3, BEnd, BEnd), BNode(4, BEnd, BNode(5, BEnd, BEnd))),
-    BNode(6, BNode(7, BEnd, BEnd), BNode(8, BEnd, BEnd))
+    Node(2, Node(3, End, End), Node(4, End, Node(5, End, End))),
+    Node(6, Node(7, End, End), Node(8, End, End))
   )
 
   println(tree.collectLeaves.map(_.value)) // List(8, 7, 5, 3)
   println(tree.leafCount) // 4
 
-  val bigTree = (1 to 10000).foldLeft[BTree[Int]](BEnd) { (tree, number) => BNode(number, tree, BEnd) }
+  val bigTree = (1 to 10000).foldLeft[Tree[Int]](End) { (tree, number) => Node(number, tree, End) }
   println(bigTree.size) // 10000
 
   println(tree.collectNodes(2).map(_.value)) // List(3, 4, 7, 8)
@@ -262,21 +333,23 @@ object BinaryTreeProblems extends App {
 
   println(
     tree.mirror
-  ) // BNode(1,BNode(6,BNode(8,BEnd,BEnd),BNode(7,BEnd,BEnd)),BNode(2,BNode(4,BNode(5,BEnd,BEnd),BEnd),BNode(3,BEnd,BEnd)))
+  ) // Node(1,Node(6,Node(8,End,End),Node(7,End,End)),Node(2,Node(4,Node(5,End,End),End),Node(3,End,End)))
 
-  val tree10x = BNode(
+  val tree10x = Node(
     10,
-    BNode(20, BNode(30, BEnd, BEnd), BNode(40, BEnd, BNode(50, BEnd, BEnd))),
-    BNode(60, BNode(70, BEnd, BEnd), BNode(80, BEnd, BEnd))
+    Node(20, Node(30, End, End), Node(40, End, Node(50, End, End))),
+    Node(60, Node(70, End, End), Node(80, End, End))
   )
 
   println(tree.sameShapeAs(tree10x)) // true
 
-  val tree10xExtra = BNode(
+  val tree10xExtra = Node(
     10,
-    BNode(20, BNode(30, BEnd, BEnd), BNode(40, BEnd, BEnd)),
-    BNode(60, BNode(70, BEnd, BEnd), BNode(80, BEnd, BEnd))
+    Node(20, Node(30, End, End), Node(40, End, End)),
+    Node(60, Node(70, End, End), Node(80, End, End))
   )
 
   println(tree10xExtra.isSymmetrical) // true
+
+  println(tree.toList) // List(1, 2, 3, 4, 5, 6, 7, 8)
 }
