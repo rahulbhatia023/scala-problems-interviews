@@ -51,6 +51,42 @@ object PathSum extends App {
     hasPathSumHelper2(Queue(tree), Queue(target))
   }
 
+  def findSumPaths(tree: Tree[Int], target: Int): List[List[Int]] = {
+    /*
+                _____1_____
+               /           \
+             __2__       __6__
+            /     \     /     \
+            3     4     7     8
+                   \
+                    -1
+           sp(1, 6) = [2 6].flatMap(f) = [[2 3] [2 4 -1]].map(path => 1 :: path) = [[1 2 3] [1 2 4 -1]]
+             sp(2, 5) = [3, 4].flatMap(f) == [[3]].map(path => 2 :: path) ++ [[4 -1]].map(path => 2 :: path) = [[2 3] [2 4 -1]]
+               sp(3, 3) = [[3]]
+               sp(4, 3) = [[-1]].map(path => 4 :: path) = [[4, -1]]
+                 sp(-1, -1) = [[-1]]
+             sp(6, 5) = []
+     */
+    def stackPaths(tree: Tree[Int], currentTarget: Int): List[List[Int]] = {
+      if (tree.isEmpty)
+        List()
+      else if (tree.isLeaf) {
+        if (tree.value == currentTarget)
+          List(List(tree.value))
+        else
+          List()
+      } else
+        List(tree.left, tree.right)
+          .filter(!_.isEmpty)
+          .flatMap { childNode =>
+            stackPaths(childNode, currentTarget - tree.value)
+              .map(path => tree.value :: path)
+          }
+    }
+
+    stackPaths(tree, target)
+  }
+
   val tree = Node(
     1,
     Node(2, Node(3, End, End), Node(4, End, Node(5, End, End))),
