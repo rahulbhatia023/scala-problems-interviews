@@ -84,7 +84,50 @@ object PathSum extends App {
           }
     }
 
-    stackPaths(tree, target)
+    @tailrec
+    def tailRecPaths(
+        nodes: List[Tree[Int]],
+        targets: List[Int],
+        currentPath: List[Tree[Int]],
+        visited: Set[Tree[Int]],
+        accumulator: List[List[Int]]
+    ): List[List[Int]] = {
+      if (nodes.isEmpty)
+        accumulator
+      else {
+        val node = nodes.head
+        val currentTarget = targets.head
+        val children = List(node.left, node.right).filter(!_.isEmpty)
+        val childrenTargets = children.map(_ => currentTarget - node.value)
+
+        if (node.isLeaf) {
+          if (node.value == currentTarget)
+            tailRecPaths(
+              nodes.tail,
+              targets.tail,
+              currentPath,
+              visited,
+              (node :: currentPath).reverse.map(_.value) :: accumulator
+            )
+          else
+            tailRecPaths(nodes.tail, targets.tail, currentPath, visited, accumulator)
+        } else {
+          if (visited.contains(node))
+            tailRecPaths(nodes.tail, targets.tail, currentPath.tail, visited, accumulator)
+          else
+            tailRecPaths(
+              children ++ nodes,
+              childrenTargets ++ targets,
+              node :: currentPath,
+              visited + node,
+              accumulator
+            )
+        }
+      }
+    }
+
+    // stackPaths(tree, target)
+    tailRecPaths(List(tree), List(target), List(), Set(), List())
   }
 
   val tree = Node(
